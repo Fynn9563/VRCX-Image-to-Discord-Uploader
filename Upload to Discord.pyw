@@ -110,7 +110,7 @@ webhook_label = Label(root, text="Webhook URL:")
 webhook_entry = Entry(root, width=50)
 webhook_label.pack(side="top", padx=5, pady=5)
 webhook_entry.pack(side="top", padx=5, pady=10)
-webhook_entry.insert(0, "https://discord.com/api/webhooks/915459012168937503/zf8HeiluYhaVhny70Guqriq9eWhJsU6wlVDylDM8-NVZYCiGsPb0zTfU0oN3yeZHx_Nk")
+webhook_entry.insert(0, "WEBHOOK URL")
 
 # Create "Upload Image" button
 upload_button = Button(root, text="Upload Image", command=upload_image_to_discord)
