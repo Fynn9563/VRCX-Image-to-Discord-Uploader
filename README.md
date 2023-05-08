@@ -16,7 +16,7 @@ This is a simple Python script that allows you to upload VRChat screenshots to a
 ## Note
 
 -   The VRChat image must be modified by [VRCX](https://github.com/pypy-vrc/VRCX) to contain the necessary metadata.
--   If you don't want to copy your webhook each time you run it, you can replace the string `"https://discord.com/api/webhooks/your-webhook-url"` in the code with your actual webhook URL.
+-   If you don't want to copy your webhook each time you run it, you can add your webhook to DISCORD_BOT_TOKEN`"https://discord.com/api/webhooks/your-webhook-url"` in the code with your actual webhook URL.
 
 ## Requirements
 
