@@ -6,8 +6,8 @@ This is a simple Python script that allows you to upload VRChat screenshots to a
 
 ## Usage
 
- 1. Install the required libraries using the '**install_dependencies.py**' script: `python install_dependencies.py`
- 2. Modify the webhook URL in the **Upload to Discord.pyw** file with your actual Discord webhook URL (optional).
+1. Install the required libraries using the '**install_dependencies.py**' script: `python install_dependencies.py`
+2. Modify DISCORD_BOT_TOKEN in the **Upload to Discord.pyw** file with your actual Discord webhook URL (optional).
 3. Start the application by double-clicking the **Upload to Discord.pyw** file.
 4. Select the image you want to upload by clicking the "Browse" button and selecting the file.
 5. Enter your Discord webhook URL in the "Webhook URL" field.
