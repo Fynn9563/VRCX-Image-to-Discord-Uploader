@@ -4,16 +4,16 @@ Upload your VRChat photos to Discord with ease!
 
 ## Description
 
-This tool allows users to select VRChat photos from their computer and upload them to a specified Discord webhook. The photos contain metadata which is extracted and used to create a rich message in Discord. If a photo is too large to be uploaded directly, the tool will automatically compress it to fit within Discord's size limits.
+This tool allows users to select VRChat photos from their computer and upload them to a specified Discord webhook. If the photos contain metadata, it's extracted and used to create a rich message in Discord. Photos without metadata are uploaded without any accompanying message. If a photo is too large to be uploaded directly, the tool will automatically compress it to fit within Discord's size limits.
 
 ## Prerequisites
 
-- **VRCX Metadata**: Images must be modified by [VRCX](https://github.com/pypy-vrc/VRCX) to contain the necessary metadata. Ensure you're using VRCX to capture and save your VRChat photos.
+- **VRCX Metadata (Optional)**: For richer Discord messages, images should be modified by [VRCX](https://github.com/pypy-vrc/VRCX) to contain the necessary metadata. Ensure you're using VRCX to capture and save your VRChat photos if you want this feature.
 
 ## Features
 
 - **Easy to Use**: Simple GUI for selecting photos and specifying a Discord webhook.
-- **Metadata Extraction**: Extracts world and player information from VRChat photos.
+- **Metadata Extraction**: Extracts world and player information from VRChat photos when available.
 - **Automatic Compression**: Automatically compresses photos that exceed Discord's size limits.
 - **Webhook Management**: Save and manage multiple webhooks for different Discord channels.
 

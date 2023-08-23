@@ -86,9 +86,8 @@ def update_webhook_combobox():
 def extract_image_metadata(file_path):
     with Image.open(file_path) as img:
         description = img.info.get('Description')
-
         if not description:
-            raise ValueError("The selected image has no metadata.")
+            return None, None, None
 
         metadata = json.loads(description)
         world_name = metadata['world']['name']
@@ -101,6 +100,9 @@ def extract_image_metadata(file_path):
 def create_payload(file_path):
     timestamp = os.stat(file_path).st_ctime
     world_name, world_id, player_names = extract_image_metadata(file_path)
+
+    if not world_name or not world_id or not player_names:
+        return None
 
     payload = {
         "content": f"Photo taken at **{world_name}** *({world_id})* with **{', '.join(player_names)}** at <t:{int(timestamp)}:f>"
@@ -118,6 +120,10 @@ def compress_image(file_path, quality=85):
 def upload_image(file_path, webhook_url):
     try:
         payload = create_payload(file_path)
+        
+        # If there's no payload, it means the image didn't have metadata.
+        if not payload:
+            payload = {}
 
         # Read file before sending payload
         with open(file_path, 'rb') as f:
