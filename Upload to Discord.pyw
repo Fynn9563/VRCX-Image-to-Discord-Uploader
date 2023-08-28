@@ -151,7 +151,7 @@ def create_payload(file_path):
 
     if not world_name or not world_id or not player_names:
         if media_channel_var.get():
-            thread_title = "Cool Image"
+            thread_title = "Cool Image 😎"
             payload = {
                 "thread_name": thread_title
             }
