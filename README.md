@@ -14,8 +14,10 @@ This tool allows users to select VRChat photos from their computer and upload th
 
 - **Easy to Use**: Simple GUI for selecting photos and specifying a Discord webhook.
 - **Metadata Extraction**: Extracts world and player information from VRChat photos when available.
+- **Clickable World ID URLs**: The tool now creates clickable links for world IDs, allowing users to directly open the corresponding VRChat worlds in their browser.
 - **Automatic Compression**: Automatically compresses photos that exceed Discord's size limits.
 - **Webhook Management**: Save and manage multiple webhooks for different Discord channels.
+- **Discord Media Channel Option**: The "Discord Media Channel" checkbox is available for uploads to Discord Media Channels. This option enables the tool to handle uploads specifically for this type of channel.
 
 ## Installation
 
@@ -32,8 +34,9 @@ This tool allows users to select VRChat photos from their computer and upload th
 1. Open the tool.
 2. Click "Browse" to select one or multiple VRChat photos.
 3. Choose a saved webhook from the dropdown or add a new one.
-4. Click "Upload Images" to start the upload process.
-5. Monitor the progress bar and status messages to track the upload.
+4. Optionally, tick the "Discord Media Channel" checkbox if uploading to a Media Channel.
+5. Click "Upload Images" to start the upload process.
+6. Monitor the progress bar and status messages to track the upload.
 
 ## Contributing
 
