@@ -6,13 +6,22 @@ from tkinter import Tk, Button, Label, filedialog, messagebox, ttk, Entry, Photo
 from PIL import Image
 import concurrent.futures
 import tempfile
+import logging
+from configparser import ConfigParser
+
+# Load configuration settings
+config = ConfigParser()
+config.read('config.ini')
 
 # Global variables for tracking progress and the image queue
 progress_bar = None
 image_queue = []
 
+# Setup logging
+logging.basicConfig(filename=config.get('Logging', 'log_file'), level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 # SQLite setup
-DATABASE_NAME = "webhooks.db"
+DATABASE_NAME = config.get('Database', 'db_name')
 
 # Database setup
 def setup_database():
@@ -30,17 +39,25 @@ def setup_database():
 
 def insert_webhook(name, url):
     """Inserts a webhook into the database."""
-    with sqlite3.connect(DATABASE_NAME) as conn:
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO webhooks (name, url) VALUES (?, ?)", (name, url))
-        conn.commit()
+    try:
+        with sqlite3.connect(DATABASE_NAME) as conn:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO webhooks (name, url) VALUES (?, ?)", (name, url))
+            conn.commit()
+    except sqlite3.Error as e:
+        logging.error(f"Error inserting webhook: {e}")
+        raise e
 
 def get_all_webhooks():
     """Retrieves all webhooks from the database."""
-    with sqlite3.connect(DATABASE_NAME) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT name, url FROM webhooks")
-        return cursor.fetchall()
+    try:
+        with sqlite3.connect(DATABASE_NAME) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name, url FROM webhooks")
+            return cursor.fetchall()
+    except sqlite3.Error as e:
+        logging.error(f"Error retrieving webhooks: {e}")
+        raise e
 
 # Webhook management
 def add_webhook():
@@ -48,10 +65,14 @@ def add_webhook():
     name = webhook_name_entry.get()
     url = webhook_url_entry.get()
     if name and url.startswith('https://discord.com/api/webhooks/'):
-        insert_webhook(name, url)
-        update_webhook_combobox()
-        add_webhook_window.destroy()
-        messagebox.showinfo("Success", "Webhook added successfully!")
+        try:
+            insert_webhook(name, url)
+            update_webhook_combobox()
+            add_webhook_window.destroy()
+            messagebox.showinfo("Success", "Webhook added successfully!")
+        except Exception as e:
+            logging.error(f"Error adding webhook: {e}")
+            messagebox.showerror("Error", str(e))
     else:
         messagebox.showerror("Error", "Invalid name or webhook URL.")
 
@@ -119,30 +140,39 @@ def delete_webhook():
         messagebox.showerror("Error", "Please select a webhook to delete.")
         return
 
-    with sqlite3.connect(DATABASE_NAME) as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM webhooks WHERE name = ?", (selected_webhook_name,))
-        conn.commit()
+    try:
+        with sqlite3.connect(DATABASE_NAME) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM webhooks WHERE name = ?", (selected_webhook_name,))
+            conn.commit()
+    except sqlite3.Error as e:
+        logging.error(f"Error deleting webhook: {e}")
+        messagebox.showerror("Error", str(e))
+        return
 
     update_webhook_combobox()
     existing_webhook_combobox['values'] = [webhook[0] for webhook in get_all_webhooks()]
 
     messagebox.showinfo("Success", "Webhook deleted successfully!")
-    
+
 def extract_image_metadata(file_path):
     """Extracts image metadata to determine world name, world ID, and player names."""
-    with Image.open(file_path) as img:
-        description = img.info.get('Description')
-        if not description:
-            return None, None, None
+    try:
+        with Image.open(file_path) as img:
+            description = img.info.get('Description')
+            if not description:
+                return None, None, None
 
-        metadata = json.loads(description)
-        world_name = metadata['world']['name']
-        world_id = metadata['world']['id']
-        players = metadata['players']
-        player_names = [player['displayName'] for player in players]
+            metadata = json.loads(description)
+            world_name = metadata['world']['name']
+            world_id = metadata['world']['id']
+            players = metadata['players']
+            player_names = [player['displayName'] for player in players]
 
-        return world_name, world_id, player_names
+            return world_name, world_id, player_names
+    except Exception as e:
+        logging.error(f"Error extracting metadata from {file_path}: {e}")
+        return None, None, None
 
 def create_payload(file_path):
     """Creates the payload message for the webhook."""
@@ -181,12 +211,16 @@ def create_payload(file_path):
 
 def compress_image(file_path, quality=85):
     """Compresses the image to a specific quality."""
-    with Image.open(file_path) as img:
-        # Create a temporary file for the compressed image
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-        img.save(temp_file.name, "JPEG", quality=quality)
-    return temp_file.name
-        
+    try:
+        with Image.open(file_path) as img:
+            # Create a temporary file for the compressed image
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+            img.save(temp_file.name, "JPEG", quality=quality)
+        return temp_file.name
+    except Exception as e:
+        logging.error(f"Error compressing image {file_path}: {e}")
+        raise e
+
 def upload_image(file_path, webhook_url):
     """Uploads the image to the specified webhook URL."""
     try:
@@ -214,7 +248,7 @@ def upload_image(file_path, webhook_url):
             os.remove(compressed_file_path)  # Delete the temporary compressed file after upload
 
         # Print the response content and status code to the console
-        print(f"Response for {os.path.basename(file_path)}: {response.status_code} - {response.text}")
+        logging.info(f"Response for {os.path.basename(file_path)}: {response.status_code} - {response.text}")
 
         if response.status_code == 200:
             return True, f"Image {os.path.basename(file_path)} uploaded successfully"
@@ -222,8 +256,9 @@ def upload_image(file_path, webhook_url):
             return False, f"Image {os.path.basename(file_path)} upload failed"
 
     except Exception as e:
+        logging.error(f"Error uploading image {file_path}: {e}")
         return False, str(e)
-        
+
 failed_uploads = []
 def on_image_uploaded(future):
     """Callback function after an image is uploaded."""
@@ -233,9 +268,9 @@ def on_image_uploaded(future):
         success, message = future.result()
 
         if success:
-            print(message)
+            logging.info(message)
         else:
-            print(message)
+            logging.error(message)
             failed_uploads.append(os.path.basename(message.split()[-3]))
 
         progress = 100 - (len(image_queue) * 100 // (len(image_queue) + 1))
@@ -243,6 +278,7 @@ def on_image_uploaded(future):
         root.update()
 
     except Exception as e:
+        logging.error(f"Error in on_image_uploaded: {e}")
         messagebox.showerror("Error", str(e))
 
     update_progress()
@@ -267,6 +303,11 @@ def update_progress():
     selected_webhook_name = webhook_combobox.get()
     webhook_url = next((url for name, url in get_all_webhooks() if name == selected_webhook_name), None)
     
+    if not webhook_url:
+        logging.error(f"Webhook URL not found for '{selected_webhook_name}'")
+        messagebox.showerror("Error", "Webhook URL not found.")
+        return
+
     future = concurrent.futures.ThreadPoolExecutor().submit(upload_image, file_path, webhook_url)
     future.add_done_callback(on_image_uploaded)
 
@@ -278,11 +319,6 @@ def process_images():
         selected_webhook_name = webhook_combobox.get()
         if not selected_webhook_name:
             messagebox.showerror("Error", "Please select a webhook.")
-            return
-
-        webhook_url = next((url for name, url in get_all_webhooks() if name == selected_webhook_name), None)
-        if not webhook_url:
-            messagebox.showerror("Error", "Webhook URL not found.")
             return
 
         if progress_bar:
@@ -299,6 +335,7 @@ def process_images():
         upload_status_label.config(text="Uploading images...")
 
     except Exception as e:
+        logging.error(f"Error in process_images: {e}")
         messagebox.showerror("Error", str(e))
 
 def browse_files():
@@ -311,27 +348,27 @@ def browse_files():
 
 # Initialize the main window
 root = Tk()
-root.title("VRChat Photo Uploader")
-root.geometry("630x430")
+root.title(config.get('Application', 'app_title'))
+root.geometry(config.get('Application', 'window_size'))
 root.resizable(False, False)
 
 # Set the application icon if the file exists
-icon_path = "icon.ico"
+icon_path = config.get('Application', 'icon_path')
 if os.path.exists(icon_path):
     root.iconbitmap(icon_path)
 
 # Attempt to load a background image for the application window
-background_image_file = "background_image.png"
+background_image_file = config.get('Application', 'background_image')
 try:
     background_image = PhotoImage(file=background_image_file)
     background_label = Label(root, image=background_image)
     background_label.place(x=0, y=0, relwidth=1, relheight=1)
 except TclError:
     background_image = None
-    print(f"Background image '{background_image_file}' not found. Running without background image.")
+    logging.warning(f"Background image '{background_image_file}' not found. Running without background image.")
 
 # Set the font style for the labels and buttons
-font_style = ("Helvetica Rounded", 11)  # Replace with your desired font family and size
+font_style = (config.get('Application', 'font_family'), config.getint('Application', 'font_size'))
 
 # Create a custom style for the buttons
 button_style = ttk.Style()
