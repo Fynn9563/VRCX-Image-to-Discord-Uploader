@@ -190,8 +190,9 @@ def create_payload(file_path):
         
         return payload
 
-    world_id_link = f"[**{world_id}**](<https://vrchat.com/home/launch?worldId={world_id}>)"
-    message_content = f"Photo taken at **{world_name}** (*{world_id_link}*) with **{', '.join(player_names)}** at <t:{int(timestamp)}:f>"
+    world_vrchat_id_link = f"[**VRChat**](<https://vrchat.com/home/launch?worldId={world_id}>)"
+    world_vrcx_id_link = f"[**VRCX**](<https://fynn9563.pythonanywhere.com/world/{world_id}>)"
+    message_content = f"Photo taken at **{world_name}** (*{world_vrchat_id_link}*, *{world_vrcx_id_link}*) with **{', '.join(player_names)}** at <t:{int(timestamp)}:f>"
     thread_title = f"Photo taken at {world_name}"
 
     if len(thread_title) > 100:
