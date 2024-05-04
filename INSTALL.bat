@@ -5,12 +5,6 @@ SETLOCAL EnableDelayedExpansion
 python --version >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     ECHO Python is not installed. Downloading and installing Python...
-    :: Ensure curl is available
-    WHERE curl >nul 2>&1
-    IF %ERRORLEVEL% NEQ 0 (
-        ECHO curl is not found. Please ensure it is installed and available in the PATH.
-        GOTO :EOF
-    )
 
     :: Download Python installer using curl
     curl -L -o python-installer.exe https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe
