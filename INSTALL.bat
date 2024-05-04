@@ -1,37 +1,26 @@
 @echo off
 SETLOCAL EnableDelayedExpansion
 
-:: Check if Python is installed by trying to call it
+:: Check if Python is installed
 python --version >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
-    ECHO Python is not installed. Attempting to download and install Python...
-
-    :: Download Python installer using curl with detailed error output
+    ECHO Python is not installed. Downloading and installing Python...
+    :: Download Python installer using curl
     curl -L -o python-installer.exe https://www.python.org/ftp/python/3.12.3/python-3.12.3-amd64.exe
-    SET CURL_ERRORLEVEL=%ERRORLEVEL%
+    SET CURL_ERRORLEVEL=!ERRORLEVEL!
     IF !CURL_ERRORLEVEL! NEQ 0 (
         ECHO Failed to download Python installer. Error Level: !CURL_ERRORLEVEL!
         GOTO :EOF
+    ) ELSE (
+        ECHO Python installer downloaded successfully.
     )
-
-    :: Confirm the download visually
-    IF NOT EXIST python-installer.exe (
-        ECHO Python installer file not found after download.
-        GOTO :EOF
-    )
-
-    ECHO Python installer downloaded successfully.
 
     :: Run the Python installer
     START /WAIT python-installer.exe /quiet InstallAllUsers=1 PrependPath=1
-    IF %ERRORLEVEL% NEQ 0 (
+    IF !ERRORLEVEL! NEQ 0 (
         ECHO Python installation failed.
         GOTO :EOF
     )
-
-    ECHO Python installed successfully.
-    :: Add Python to PATH for the current script
-    SET "PATH=%PATH%;C:\Python312\Scripts\;C:\Python312\"
 )
 
 ECHO Checking for VRCX installation...
