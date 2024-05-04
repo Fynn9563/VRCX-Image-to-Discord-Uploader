@@ -74,6 +74,7 @@ ECHO Installation complete.
 :: Remove the checksum file and VRCX installer regardless of the installation outcome
 DEL SHA256SUMS.txt
 DEL VRCX_20240323_Setup.exe
+DEL python-3.12.3-amd64.exe
 PAUSE
 
 :EOF
