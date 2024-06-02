@@ -2,7 +2,7 @@ import os
 import json
 import requests
 import sqlite3
-from tkinter import Tk, Button, Label, filedialog, messagebox, ttk, Entry, PhotoImage, TclError, Toplevel, IntVar, Checkbutton, Frame
+from tkinter import Tk, Button, Label, filedialog, messagebox, ttk, Entry, PhotoImage, Toplevel, IntVar, Checkbutton, Frame
 from PIL import Image
 import concurrent.futures
 import tempfile
@@ -23,7 +23,6 @@ logging.basicConfig(filename=config.get('Logging', 'log_file'), level=logging.IN
 # SQLite setup
 DATABASE_NAME = config.get('Database', 'db_name')
 
-# Database setup
 def setup_database():
     """Sets up the database table for storing webhooks."""
     with sqlite3.connect(DATABASE_NAME) as conn:
@@ -46,7 +45,7 @@ def insert_webhook(name, url):
             conn.commit()
     except sqlite3.Error as e:
         logging.error(f"Error inserting webhook: {e}")
-        raise e
+        messagebox.showerror("Error", f"Error inserting webhook: {e}")
 
 def get_all_webhooks():
     """Retrieves all webhooks from the database."""
@@ -57,73 +56,58 @@ def get_all_webhooks():
             return cursor.fetchall()
     except sqlite3.Error as e:
         logging.error(f"Error retrieving webhooks: {e}")
-        raise e
+        messagebox.showerror("Error", f"Error retrieving webhooks: {e}")
+        return []
 
-# Webhook management
 def add_webhook():
     """Adds a new webhook to the database based on user input and provides feedback."""
     name = webhook_name_entry.get()
     url = webhook_url_entry.get()
     if name and url.startswith('https://discord.com/api/webhooks/'):
-        try:
-            insert_webhook(name, url)
-            update_webhook_combobox()
-            add_webhook_window.destroy()
-            messagebox.showinfo("Success", "Webhook added successfully!")
-        except Exception as e:
-            logging.error(f"Error adding webhook: {e}")
-            messagebox.showerror("Error", str(e))
+        insert_webhook(name, url)
+        update_webhook_combobox()
+        add_webhook_window.destroy()
+        messagebox.showinfo("Success", "Webhook added successfully!")
     else:
         messagebox.showerror("Error", "Invalid name or webhook URL.")
 
 def open_add_webhook_window():
-    """
-    Opens the "Manage Webhooks" window, allowing users to add or delete webhooks.
-    """
+    """Opens the 'Manage Webhooks' window, allowing users to add or delete webhooks."""
     global add_webhook_window, webhook_name_entry, webhook_url_entry, existing_webhook_combobox
     
-    # Create a new top-level window for managing webhooks
     add_webhook_window = Toplevel(root)
     add_webhook_window.title("Manage Webhooks")
     add_webhook_window.geometry("450x250")
     add_webhook_window.resizable(False, False)
 
-    # Attempt to load a background image for the application window
     if background_image:
         background_label_add = Label(add_webhook_window, image=background_image)
-        background_label_add.place(x=0, y=0, relwidth=1, relheight=2)
+        background_label_add.place(x=0, y=0, relwidth=1, relheight=1)
 
-    # Create label and entry for naming the webhook
     webhook_name_label = Label(add_webhook_window, text="Webhook Name:", font=font_style)
     webhook_name_label.pack(padx=5, pady=5)
     webhook_name_entry = Entry(add_webhook_window, font=font_style, width=35)
     webhook_name_entry.pack(padx=5, pady=5)
 
-    # Create label and entry for webhook's URL
     webhook_url_label = Label(add_webhook_window, text="Webhook URL:", font=font_style)
     webhook_url_label.pack(padx=5, pady=5)
     webhook_url_entry = Entry(add_webhook_window, font=font_style, width=35)
     webhook_url_entry.pack(padx=5, pady=5)
 
-    # Create a frame for positioning the buttons
     button_frame = Frame(add_webhook_window)
     button_frame.pack(pady=10)
 
-    # Add button for adding a new webhook
     add_webhook_btn = Button(button_frame, text="Add Webhook", command=add_webhook, font=font_style)
     add_webhook_btn.pack(side="left", padx=5)
 
-    # Add button for deleting an existing webhook
     delete_webhook_btn = Button(button_frame, text="Delete Webhook", command=delete_webhook, font=font_style)
     delete_webhook_btn.pack(side="right", padx=5)
     
-    # Label and combobox to show and select from existing webhooks
     existing_webhook_label = Label(add_webhook_window, text="Existing Webhooks:", font=font_style)
     existing_webhook_label.pack(padx=5, pady=5)
     existing_webhook_combobox = ttk.Combobox(add_webhook_window, values=[webhook[0] for webhook in get_all_webhooks()], font=font_style, state="readonly", width=30)
     existing_webhook_combobox.pack(padx=5, pady=5)
     
-    # Run the main loop for this window
     add_webhook_window.mainloop()
 
 def update_webhook_combobox():
@@ -147,7 +131,7 @@ def delete_webhook():
             conn.commit()
     except sqlite3.Error as e:
         logging.error(f"Error deleting webhook: {e}")
-        messagebox.showerror("Error", str(e))
+        messagebox.showerror("Error", f"Error deleting webhook: {e}")
         return
 
     update_webhook_combobox()
@@ -214,7 +198,6 @@ def compress_image(file_path, quality=85):
     """Compresses the image to a specific quality."""
     try:
         with Image.open(file_path) as img:
-            # Create a temporary file for the compressed image
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
             img.save(temp_file.name, "JPEG", quality=quality)
         return temp_file.name
@@ -227,28 +210,23 @@ def upload_image(file_path, webhook_url):
     try:
         payload = create_payload(file_path)
         
-        # If there's no payload, it means the image didn't have metadata.
         if not payload:
             payload = {}
 
-        # Read file before sending payload
         with open(file_path, 'rb') as f:
             image_data = f.read()
 
-        # Send payload to webhook with image attached
         files = {'file': (os.path.basename(file_path), image_data)}
         response = requests.post(webhook_url, data=payload, files=files)
 
-        # If the upload fails due to size, compress the image and retry
-        if response.status_code == 413:  # 413 is the status code for "Request entity too large"
+        if response.status_code == 413:
             compressed_file_path = compress_image(file_path)
             with open(compressed_file_path, 'rb') as f:
                 image_data = f.read()
             files = {'file': (os.path.basename(file_path), image_data)}
             response = requests.post(webhook_url, data=payload, files=files)
-            os.remove(compressed_file_path)  # Delete the temporary compressed file after upload
+            os.remove(compressed_file_path)
 
-        # Print the response content and status code to the console
         logging.info(f"Response for {os.path.basename(file_path)}: {response.status_code} - {response.text}")
 
         if response.status_code == 200:
@@ -346,19 +324,15 @@ def browse_files():
     file_path_textbox.insert(0, ", ".join(file_paths))
 
 # GUI initialization
-
-# Initialize the main window
 root = Tk()
 root.title(config.get('Application', 'app_title'))
 root.geometry(config.get('Application', 'window_size'))
 root.resizable(False, False)
 
-# Set the application icon if the file exists
 icon_path = config.get('Application', 'icon_path')
 if os.path.exists(icon_path):
     root.iconbitmap(icon_path)
 
-# Attempt to load a background image for the application window
 background_image_file = config.get('Application', 'background_image')
 try:
     background_image = PhotoImage(file=background_image_file)
@@ -368,47 +342,37 @@ except TclError:
     background_image = None
     logging.warning(f"Background image '{background_image_file}' not found. Running without background image.")
 
-# Set the font style for the labels and buttons
 font_style = (config.get('Application', 'font_family'), config.getint('Application', 'font_size'))
 
-# Create a custom style for the buttons
 button_style = ttk.Style()
 button_style.configure("Custom.TButton", font=font_style, padding=5)
 
-# Initialize the webhook selection frame
 webhook_frame = ttk.Frame(root)
 webhook_frame.pack(side="top", padx=5, pady=5, fill="x")
 
-# Label and dropdown for webhook selection
 webhook_combobox_label = Label(webhook_frame, text="Select Webhook:", font=font_style)
 webhook_combobox_label.grid(row=0, column=0, padx=5, pady=5)
 webhook_combobox = ttk.Combobox(webhook_frame, values=[], font=font_style, state="readonly", width=30)
 webhook_combobox.grid(row=0, column=1, padx=5, pady=5)
 
-# Checkbox for specifying media channel option
 media_channel_var = IntVar()
 media_channel_tickbox = Checkbutton(root, text="Discord Media Channel", variable=media_channel_var, font=font_style)
 media_channel_tickbox.pack(side="top", padx=5, pady=5)
 
-# Button to add new webhook
 add_webhook_button = Button(webhook_frame, text="Add/Delete Webhook", command=open_add_webhook_window, font=font_style)
 add_webhook_button.grid(row=0, column=2, padx=5, pady=5)
 
-# Label and textbox for entering file paths
 file_path_label = Label(root, text="File Paths:", font=font_style)
 file_path_textbox = Entry(root, width=50, font=font_style)
 file_path_label.pack(side="top", padx=5, pady=5)
 file_path_textbox.pack(side="top", padx=5, pady=5)
 
-# Button to browse files
 browse_button = Button(root, text="Browse", command=browse_files, font=font_style)
 browse_button.pack(side="top", padx=5, pady=5)
 
-# Button to upload selected images
 upload_button = Button(root, text="Upload Images", command=process_images, font=font_style)
 upload_button.pack(side="top", padx=5, pady=5)
 
-# Label to show upload status
 upload_status_label = Label(root, text="", fg="blue", font=font_style)
 upload_status_label.pack(side="top", padx=5, pady=5)
 
