@@ -3,10 +3,10 @@ name: Build and Package VRChat Photo Uploader
 on:
   push:
     branches:
-      - main
+      - main 
   pull_request:
     branches:
-      - main
+      - main  
 
 jobs:
   build:
@@ -14,12 +14,12 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
-        python-version: 3.12
+        python-version: '3.12'  
 
     - name: Install dependencies
       run: |
@@ -44,7 +44,7 @@ jobs:
         "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" VRChatPhotoUploaderSetup.iss
 
     - name: Upload Setup.exe
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: Setup.exe
-        path: Output\setup.exe
+        path: Output/VRChatPhotoUploaderSetup.exe
