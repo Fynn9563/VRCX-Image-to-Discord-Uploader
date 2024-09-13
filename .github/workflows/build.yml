@@ -106,3 +106,4 @@ jobs:
         asset_path: ./Output/VRChatPhotoUploaderSetup.exe
         asset_name: VRChatPhotoUploaderSetup.exe
         asset_content_type: application/octet-stream
+        token: ${{ secrets.GH_PAT }}  
