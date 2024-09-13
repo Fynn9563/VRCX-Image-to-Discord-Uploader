@@ -33,6 +33,10 @@ jobs:
     - name: Build executable with PyInstaller
       run: |
         pyinstaller --onefile --noconsole --icon=icon.ico main.py
+        
+    - name: Rename main.exe to VRChat Photo Uploader.exe
+      run: |
+        Rename-Item -Path dist/main.exe -NewName dist/"VRChat Photo Uploader.exe"
 
     - name: Install Inno Setup
       run: |
