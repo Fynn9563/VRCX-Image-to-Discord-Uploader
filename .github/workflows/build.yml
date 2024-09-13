@@ -37,7 +37,7 @@ jobs:
     - name: Install Inno Setup
       run: |
         curl -L -o isetup.exe "https://jrsoftware.org/download.php/is.exe"
-        start /wait isetup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+        Start-Process -FilePath isetup.exe -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -NoNewWindow -Wait
 
     - name: Generate installer with Inno Setup
       run: |
