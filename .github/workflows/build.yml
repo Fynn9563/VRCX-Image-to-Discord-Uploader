@@ -36,8 +36,8 @@ jobs:
         
     - name: Rename main.exe to VRChat Photo Uploader.exe
       run: |
-        Rename-Item -Path dist/main.exe -NewName dist/"VRChat Photo Uploader.exe"
-
+        Rename-Item -Path dist/main.exe -NewName "dist/VRChat Photo Uploader.exe"
+        
     - name: Install Inno Setup
       run: |
         curl -L -o isetup.exe "https://jrsoftware.org/download.php/is.exe"
