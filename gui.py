@@ -2,6 +2,7 @@ from PIL import Image, ImageTk
 import os
 import logging
 import re
+import threading
 from tkinter import (
     Tk, Button, Label, filedialog, messagebox, ttk, Entry, PhotoImage, Toplevel,
     IntVar, Checkbutton, Frame, TclError
@@ -9,7 +10,6 @@ from tkinter import (
 from database_manager import DatabaseManager
 from uploader import ImageUploader
 from config_loader import load_config
-
 
 class AppState:
     """

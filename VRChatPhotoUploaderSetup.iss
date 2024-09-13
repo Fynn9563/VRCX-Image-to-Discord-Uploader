@@ -11,7 +11,6 @@ SolidCompression=yes
 [Files]
 ; These will be relative paths within the repository
 Source: "dist\VRChat Photo Uploader.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "config.ini"; DestDir: "{app}"; Flags: ignoreversion
 Source: "background_image.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "icon.ico"; DestDir: "{app}"; Flags: ignoreversion
 

@@ -1,6 +1,7 @@
 # database_manager.py
 import sqlite3
 import logging
+import os
 from tkinter import messagebox
 
 class DatabaseManager:
@@ -8,11 +9,27 @@ class DatabaseManager:
     Manages database operations for webhooks.
     """
     def __init__(self, db_name):
-        self.db_name = db_name
+        self.db_name = self.get_database_path(db_name)
         self.conn = None
         self.cursor = None
         self.connect()
         self.setup_database()
+
+    def get_database_path(self, db_name):
+        """
+        Determines the full path to the database file in a user-writable directory.
+        """
+        # If db_name is an absolute path, return it as is
+        if os.path.isabs(db_name):
+            return db_name
+        else:
+            # Get the user's AppData directory
+            appdata_dir = os.getenv('APPDATA')
+            # Create a subdirectory for your application
+            data_dir = os.path.join(appdata_dir, 'VRChat Photo Uploader')
+            os.makedirs(data_dir, exist_ok=True)  # Create the directory if it doesn't exist
+            # Return the full path to the database file
+            return os.path.join(data_dir, db_name)
 
     def connect(self):
         try:
