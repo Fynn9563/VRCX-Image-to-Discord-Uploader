@@ -53,3 +53,35 @@ jobs:
       with:
         name: Setup.exe
         path: Output/VRChatPhotoUploaderSetup.exe
+        
+    - name: Read version from file
+      id: read_version
+      run: |
+        VERSION=$(cat version.txt)
+        echo "Version: $VERSION"
+        echo "version=$VERSION" >> $GITHUB_ENV
+
+    - name: Create a version tag
+      run: |
+        git tag ${{ env.version }}
+        git push origin ${{ env.version }}
+
+    - name: Create GitHub release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.version }}
+        release_name: "VRChat Photo Uploader ${{ env.version }}"
+        body: "This is the latest release of VRChat Photo Uploader."
+        draft: false
+        prerelease: false
+
+    - name: Upload Setup.exe to release
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: Output/VRChatPhotoUploaderSetup.exe
+        asset_name: VRChatPhotoUploaderSetup.exe
+        asset_content_type: application/octet-stream
