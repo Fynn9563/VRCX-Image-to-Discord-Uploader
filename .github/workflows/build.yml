@@ -41,7 +41,7 @@ jobs:
 
     - name: Generate installer with Inno Setup
       run: |
-        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" VRChatPhotoUploaderSetup.iss
+        Start-Process -FilePath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" -ArgumentList "VRChatPhotoUploaderSetup.iss" -NoNewWindow -Wait
 
     - name: Upload Setup.exe
       uses: actions/upload-artifact@v3
