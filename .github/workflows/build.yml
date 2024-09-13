@@ -1,12 +1,12 @@
-name: Build and Package VRChat Photo Uploader
+name: Build and Deploy VRChat Photo Uploader
 
 on:
   push:
     branches:
-      - main 
+      - main
   pull_request:
     branches:
-      - main  
+      - main
 
 jobs:
   build:
@@ -19,7 +19,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.12'  
+        python-version: '3.12'
 
     - name: Install dependencies
       run: |
@@ -33,12 +33,12 @@ jobs:
     - name: Build executable with PyInstaller
       run: |
         pyinstaller --onefile --noconsole --icon=icon.ico main.py
-        
+
     - name: Rename main.exe to VRChat Photo Uploader.exe
       run: |
         cd dist
         Rename-Item "main.exe" "VRChat Photo Uploader.exe"
-        
+
     - name: Install Inno Setup
       run: |
         curl -L -o isetup.exe "https://jrsoftware.org/download.php/is.exe"
@@ -48,12 +48,26 @@ jobs:
       run: |
         Start-Process -FilePath "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" -ArgumentList "VRChatPhotoUploaderSetup.iss" -NoNewWindow -Wait
 
-    - name: Upload Setup.exe
+    - name: Upload Setup.exe as artifact
       uses: actions/upload-artifact@v3
       with:
         name: Setup.exe
         path: Output/VRChatPhotoUploaderSetup.exe
-        
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build  # This ensures that 'deploy' runs after 'build'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Download Setup.exe artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: Setup.exe
+        path: ./Output
+
     - name: Read version from file
       id: read_version
       run: |
@@ -82,6 +96,6 @@ jobs:
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: Output/VRChatPhotoUploaderSetup.exe
+        asset_path: ./Output/VRChatPhotoUploaderSetup.exe
         asset_name: VRChatPhotoUploaderSetup.exe
         asset_content_type: application/octet-stream
