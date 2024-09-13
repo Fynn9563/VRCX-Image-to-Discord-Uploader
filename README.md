@@ -4,44 +4,45 @@ Upload your VRChat photos to Discord with ease!
 
 ## Description
 
-This tool allows users to select VRChat photos from their computer and upload them to a specified Discord webhook. If the photos contain metadata, it's extracted and used to create a rich message in Discord. Photos without metadata are uploaded without any accompanying message. If a photo is too large to be uploaded directly, the tool will automatically compress it to fit within Discord's size limits.
+VRChat Photo Uploader is a tool that allows users to easily upload their VRChat photos to a specified Discord webhook. If the photos contain metadata (like world and player information), it's extracted and used to create a rich message in Discord. For photos without metadata, the tool simply uploads them without an accompanying message. If a photo exceeds Discord's size limits, the tool automatically compresses it to ensure successful uploads.
 
-## Prerequisites
-
-- **VRCX Metadata (Optional)**: For richer Discord messages, images should be modified by [VRCX](https://github.com/pypy-vrc/VRCX) to contain the necessary metadata. Ensure you're using VRCX to capture and save your VRChat photos if you want this feature.
+This tool is now packaged as an executable with an easy-to-use installer, so no Python installation is required!
 
 ## Features
 
 - **Easy to Use**: Simple GUI for selecting photos and specifying a Discord webhook.
 - **Metadata Extraction**: Extracts world and player information from VRChat photos when available.
-- **Clickable World ID URLs**: The tool now creates clickable links for world IDs, allowing users to directly open the corresponding VRChat worlds in their browser.
-- **Automatic Compression**: Automatically compresses photos that exceed Discord's size limits.
-- **Webhook Management**: Save and manage multiple webhooks for different Discord channels.
-- **Discord Media Channel Option**: The "Discord Media Channel" checkbox is available for uploads to Discord Media Channels. This option enables the tool to handle uploads specifically for this type of channel.
+- **Clickable World ID URLs**: Automatically generates clickable links for world IDs, allowing users to open corresponding VRChat worlds in their browser.
+- **Automatic Compression**: Compresses photos that exceed Discord's file size limit.
+- **Webhook Management**: Save and manage multiple Discord webhooks for easy reuse.
+- **Discord Media Channel Option**: Includes a "Discord Media Channel" checkbox for uploads to Discord Media Channels, ensuring compatibility with Discord's media channel features.
 
 ## Installation
 
-1. Ensure you have Python installed on your machine.
-2. Clone this repository.
-3. Run the `install_dependencies.py` script to install the required Python libraries:
-   ```
-   python install_dependencies.py
-   ```
-4. After the dependencies are installed, you can run the application by double-clicking on `Upload to Discord.pyw`.
+You no longer need to manually install Python or dependencies! Follow these steps to install the VRChat Photo Uploader:
+
+1. **Download the Installer**:
+   - Go to the **[Releases](https://github.com/Fynn9563/VRCX-Image-to-Discord-Uploader/releases)** section of the GitHub repository.
+   - Download the latest version of the installer (`Setup.exe`).
+
+2. **Run the Installer**:
+   - Double-click on `Setup.exe` to install VRChat Photo Uploader on your computer.
+   - Follow the prompts to complete the installation.
+
+3. **Launch the Application**:
+   - Once installed, you can find the VRChat Photo Uploader in your Start Menu or on your Desktop if you selected the option to create a shortcut.
 
 ## Usage
 
-1. Open the tool.
-2. Click "Browse" to select one or multiple VRChat photos.
-3. Choose a saved webhook from the dropdown or add a new one.
-4. Optionally, tick the "Discord Media Channel" checkbox if uploading to a Media Channel.
-5. Click "Upload Images" to start the upload process.
-6. Monitor the progress bar and status messages to track the upload.
-
-## Contributing
-
-If you'd like to contribute, please fork the repository and make changes as you'd like. Pull requests are warmly welcome.
+1. **Open the Tool**: Launch the VRChat Photo Uploader from your desktop or Start Menu.
+2. **Browse Photos**: Click "Browse" to select one or multiple VRChat photos from your computer.
+3. **Select Webhook**: Choose a saved webhook from the dropdown or add a new one by providing the webhook name and URL.
+4. **Optional Media Channel Upload**: Check the "Discord Media Channel" box if you’re uploading to a Discord Media Channel.
+5. **Upload Images**: Click "Upload Images" to start the upload process.
+6. **Monitor Progress**: Watch the progress bar and status messages for feedback on the upload process.
 
 ## License
 
-This project is open-source and available under the [MIT License](https://github.com/Fynn9563/VRCX-Image-to-Discord-Uploader/blob/main/LICENSE).
+This project is licensed under the [MIT License](https://github.com/Fynn9563/VRCX-Image-to-Discord-Uploader/blob/main/LICENSE).
+
+---

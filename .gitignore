@@ -1,3 +1,7 @@
 *.db
 *.log
 *.exe
+__pycache__
+main
+dist
+main.spec
