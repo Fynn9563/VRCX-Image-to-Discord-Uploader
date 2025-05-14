@@ -140,11 +140,22 @@ class ApplicationGUI:
         )
         add_webhook_button.grid(row=0, column=2, padx=5, pady=5)
 
-        media_channel_tickbox = Checkbutton(
-            self.root, text="Discord Forum Channel", variable=self.app_state.media_channel_var,
-            font=self.app_state.font_style
-        )
-        media_channel_tickbox.pack(side="top", padx=5, pady=5)
+        # Edit Metadata button and checkbox side by side
+        meta_media_frame = Frame(self.root)
+        meta_media_frame.pack(side="top", fill="x", padx=5, pady=5)
+
+        Button(meta_media_frame,
+               text="Edit Metadata",
+               font=self.app_state.font_style,
+               command=lambda: PNGMetadataEditor(Toplevel(self.root))
+        ).pack(side="left", padx=(0, 10))
+
+        Checkbutton(meta_media_frame,
+                    text="Discord Forum Channel",
+                    variable=self.app_state.media_channel_var,
+                    font=self.app_state.font_style
+        ).pack(side="left")
+
 
         file_path_label = Label(self.root, text="File Paths:", font=self.app_state.font_style)
         self.app_state.file_path_textbox = Entry(self.root, width=50, font=self.app_state.font_style)
@@ -155,19 +166,12 @@ class ApplicationGUI:
             self.root, text="Browse", command=self.browse_files, font=self.app_state.font_style
         )
         browse_button.pack(side="top", padx=5, pady=5)
-
+        
         self.app_state.upload_button = Button(
             self.root, text="Upload Images", command=self.process_images, font=self.app_state.font_style
         )
         self.app_state.upload_button.pack(side="top", padx=5, pady=5)
 
-        self.edit_metadata_button = Button(
-            self.root,
-            text="Edit Metadata",
-            font=self.app_state.font_style,
-            command=lambda: PNGMetadataEditor(Toplevel(self.root))
-        )
-        self.edit_metadata_button.pack(side="top", padx=5, pady=5)
 
         self.app_state.upload_status_label = Label(
             self.root, text="", fg="blue", font=self.app_state.font_style
