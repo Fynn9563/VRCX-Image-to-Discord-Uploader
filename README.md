@@ -23,7 +23,7 @@ You no longer need to manually install Python or dependencies! Follow these step
 
 1. **Download the Installer**:
    - Go to the **[Releases](https://github.com/Fynn9563/VRCX-Image-to-Discord-Uploader/releases)** section of the GitHub repository.
-   - Download the latest version of the installer (`Setup.exe`).
+   - Download the latest version of the installer (`VRChatPhotoUploaderSetup.exe `).
 
 2. **Run the Installer**:
    - Double-click on `Setup.exe` to install VRChat Photo Uploader on your computer.
