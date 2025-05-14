@@ -97,7 +97,6 @@ class PNGMetadataEditor:
         file_path = filedialog.askopenfilename(title="Select PNG file", filetypes=[("PNG files", "*.png")])
         if not file_path:
             return
-
         try:
             with Image.open(file_path) as img:
                 metadata_json = img.info.get("Description")
@@ -108,45 +107,36 @@ class PNGMetadataEditor:
         except Exception as e:
             messagebox.showerror("Error", f"Error loading PNG: {e}")
             return
-
-        # Always get atime and mtime for later use
+        # store timestamps
         try:
             stat = os.stat(file_path)
             self.original_timestamps = (stat.st_atime, stat.st_mtime)
         except Exception as e:
-            messagebox.showwarning("Warning", f"Could not load file timestamps: {e}")
             self.original_timestamps = None
-
-        # Determine creation time from filename if possible
+            logging.warning(f"Could not read timestamps: {e}")
+        # parse creation from filename first
         creation_ts = None
-        filename = os.path.basename(file_path)
-        match = re.search(r"(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2}(?:\.\d+)?)", filename)
-        if match:
-            date_part = match.group(1)
-            time_part = match.group(2).replace('-', ':')
-            try:
-                dt = datetime.datetime.strptime(f"{date_part} {time_part}", "%Y-%m-%d %H:%M:%S.%f")
-            except ValueError:
+        base = os.path.basename(file_path)
+        m = re.search(r"(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2}(?:\.\d+)?)", base)
+        if m:
+            date, time = m.groups()
+            tstr = time.replace('-', ':')
+            for fmt in ("%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d %H:%M:%S"):
                 try:
-                    dt = datetime.datetime.strptime(f"{date_part} {time_part}", "%Y-%m-%d %H:%M:%S")
+                    dt = datetime.datetime.strptime(f"{date} {tstr}", fmt)
+                    creation_ts = dt.timestamp()
+                    break
                 except ValueError:
-                    dt = None
-            if dt:
-                creation_ts = dt.timestamp()
-
-        # Fallback to Windows creation time if filename parse failed
+                    continue
         if creation_ts is None:
             try:
                 creation_ts = stat.st_ctime
             except Exception:
                 creation_ts = None
-
         self.original_creation_time = creation_ts
         if creation_ts:
-            creation_str = datetime.datetime.fromtimestamp(creation_ts).strftime("%Y-%m-%d %H:%M:%S")
-            self.creation_date_var.set(creation_str)
-
-        # Populate fields from metadata JSON
+            self.creation_date_var.set(datetime.datetime.fromtimestamp(creation_ts).strftime("%Y-%m-%d %H:%M:%S"))
+        # populate fields
         if "author" in metadata:
             self.author_displayName.delete(0, tk.END)
             self.author_displayName.insert(0, metadata["author"].get("displayName", ""))
@@ -161,25 +151,21 @@ class PNGMetadataEditor:
             self.world_instanceId.insert(0, metadata["world"].get("instanceId", ""))
         if "players" in metadata:
             self.players_text.delete("1.0", tk.END)
-            players_lines = [f"{p.get('displayName', '')}, {p.get('id', '')}" for p in metadata["players"]]
-            self.players_text.insert(tk.END, "\n".join(players_lines))
-        # Also populate the raw JSON area
+            lines = [f"{p.get('displayName')}, {p.get('id')}" for p in metadata.get("players", [])]
+            self.players_text.insert(tk.END, "\n".join(lines))
         self.raw_json_text.delete("1.0", tk.END)
         self.raw_json_text.insert(tk.END, json.dumps(metadata, indent=2, ensure_ascii=False))
-        messagebox.showinfo("Success", "Metadata and creation date loaded and form fields populated.")
+        messagebox.showinfo("Success", "Loaded metadata and timestamps.")
 
     def load_raw_json(self):
         """Load JSON from the raw JSON text box into form fields."""
         raw = self.raw_json_text.get("1.0", tk.END).strip()
         if not raw:
-            messagebox.showerror("Error", "No raw JSON provided.")
-            return
+            return messagebox.showerror("Error", "No raw JSON provided.")
         try:
             metadata = json.loads(raw)
         except Exception as e:
-            messagebox.showerror("Error", f"Error parsing JSON: {e}")
-            return
-        # Populate fields
+            return messagebox.showerror("Error", f"Invalid JSON: {e}")
         if "author" in metadata:
             self.author_displayName.delete(0, tk.END)
             self.author_displayName.insert(0, metadata["author"].get("displayName", ""))
@@ -194,71 +180,56 @@ class PNGMetadataEditor:
             self.world_instanceId.insert(0, metadata["world"].get("instanceId", ""))
         if "players" in metadata:
             self.players_text.delete("1.0", tk.END)
-            players_lines = [f"{p.get('displayName', '')}, {p.get('id', '')}" for p in metadata["players"]]
-            self.players_text.insert(tk.END, "\n".join(players_lines))
-        messagebox.showinfo("Success", "Raw JSON loaded into form fields.")
+            lines = [f"{p.get('displayName')}, {p.get('id')}" for p in metadata.get("players", [])]
+            self.players_text.insert(tk.END, "\n".join(lines))
+        messagebox.showinfo("Success", "Loaded raw JSON.")
 
     def select_png_for_embedding(self):
-        """Select a PNG file that will have metadata embedded."""
-        file_path = filedialog.askopenfilename(title="Select PNG file for embedding", filetypes=[("PNG files", "*.png")])
+        file_path = filedialog.askopenfilename(title="Select PNG for embedding", filetypes=[("PNG files", "*.png")])
         if not file_path:
             return
         self.embed_png_path = file_path
-        messagebox.showinfo("File Selected", f"Selected PNG for embedding:\n{file_path}")
+        messagebox.showinfo("Selected", f"Embedding into: {file_path}")
 
     def embed_metadata(self):
-        """Build the metadata JSON from the form and embed it into the selected PNG.
-        Also, use the original file’s timestamps (and creation time on Windows, if possible)."""
+        """Embed metadata and save output filename including date if missing."""
         if not self.embed_png_path:
-            messagebox.showerror("Error", "No PNG file selected for embedding. Please click 'Select PNG for Embedding' first.")
-            return
-        author = {
-            "displayName": self.author_displayName.get().strip(),
-            "id": self.author_id.get().strip()
-        }
-        world = {
-            "name": self.world_name.get().strip(),
-            "id": self.world_id.get().strip(),
-            "instanceId": self.world_instanceId.get().strip()
-        }
-        players = []
-        players_raw = self.players_text.get("1.0", tk.END).strip()
-        if players_raw:
-            for line in players_raw.splitlines():
-                parts = line.split(",")
-                if len(parts) == 2:
-                    players.append({
-                        "displayName": parts[0].strip(),
-                        "id": parts[1].strip()
-                    })
-        metadata_dict = {
+            return messagebox.showerror("Error", "No file selected.")
+        metadata = {
             "application": "VRCX",
             "version": 1,
-            "author": author,
-            "world": world,
-            "players": players
+            "author": {"displayName": self.author_displayName.get(), "id": self.author_id.get()},
+            "world": {"name": self.world_name.get(), "id": self.world_id.get(), "instanceId": self.world_instanceId.get()},
+            "players": [ {"displayName": p.split(',')[0].strip(), "id": p.split(',')[1].strip()} for p in self.players_text.get("1.0", tk.END).splitlines() if "," in p ]
         }
-        metadata_json = json.dumps(metadata_dict, indent=2, ensure_ascii=False)
+        data = json.dumps(metadata, indent=2, ensure_ascii=False)
         try:
-            image = Image.open(self.embed_png_path)
+            img = Image.open(self.embed_png_path)
         except Exception as e:
-            messagebox.showerror("Error", f"Error opening PNG file: {e}")
-            return
-        pnginfo = PngImagePlugin.PngInfo()
-        pnginfo.add_text("Description", metadata_json)
+            return messagebox.showerror("Error", f"Open failed: {e}")
+        info = PngImagePlugin.PngInfo()
+        info.add_text("Description", data)
         base, ext = os.path.splitext(self.embed_png_path)
-        save_path = base + "_Modified" + ext
+        name = os.path.basename(base)
+        # add date if missing
+        if not re.search(r"\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}", name):
+            ts = self.original_creation_time
+            if ts:
+                dt = datetime.datetime.fromtimestamp(ts)
+                timestr = dt.strftime("%Y-%m-%d_%H-%M-%S.%f")[:-3] if dt.microsecond else dt.strftime("%Y-%m-%d_%H-%M-%S")
+                base = f"{base}_{timestr}"
+        out = f"{base}_Modified{ext}"
         try:
-            image.save(save_path, pnginfo=pnginfo)
+            img.save(out, pnginfo=info)
             if self.original_timestamps:
-                os.utime(save_path, self.original_timestamps)
+                os.utime(out, self.original_timestamps)
             if set_file_creation_time and self.original_creation_time:
-                set_file_creation_time(save_path, self.original_creation_time)
-            messagebox.showinfo("Success", f"PNG saved with embedded metadata:\n{save_path}")
+                set_file_creation_time(out, self.original_creation_time)
+            messagebox.showinfo("Done", f"Saved: {out}")
         except Exception as e:
-            messagebox.showerror("Error", f"Error saving PNG file: {e}")
+            messagebox.showerror("Error", f"Save failed: {e}")
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = PNGMetadataEditor(root)
+    PNGMetadataEditor(root)
     root.mainloop()
