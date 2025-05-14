@@ -1,11 +1,12 @@
-#!/usr/bin/env python3
 import io
 import json
 import os
+import re
+import datetime
+import logging
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext
 from PIL import Image, PngImagePlugin
-import datetime
 
 # Attempt to import pywin32 modules for Windows creation time update
 try:
@@ -19,7 +20,6 @@ try:
             path, win32con.GENERIC_WRITE, 0, None,
             win32con.OPEN_EXISTING, win32con.FILE_ATTRIBUTE_NORMAL, None
         )
-        # SetFileTime(handle, creation_time, last_access_time, last_write_time)
         win32file.SetFileTime(handle, wintime, None, None)
         handle.close()
 except ImportError:
@@ -61,7 +61,6 @@ class PNGMetadataEditor:
         tk.Button(load_frame, text="Load Raw JSON", command=self.load_raw_json).grid(row=3, column=0, padx=5, pady=5)
         
         # Form fields for metadata
-        # Author fields
         tk.Label(form_frame, text="Author Display Name:").grid(row=0, column=0, sticky="w", padx=5)
         self.author_displayName = tk.Entry(form_frame, width=40)
         self.author_displayName.grid(row=0, column=1, padx=5, pady=2)
@@ -70,7 +69,6 @@ class PNGMetadataEditor:
         self.author_id = tk.Entry(form_frame, width=40)
         self.author_id.grid(row=1, column=1, padx=5, pady=2)
         
-        # World fields
         tk.Label(form_frame, text="World Name:").grid(row=2, column=0, sticky="w", padx=5)
         self.world_name = tk.Entry(form_frame, width=40)
         self.world_name.grid(row=2, column=1, padx=5, pady=2)
@@ -83,7 +81,6 @@ class PNGMetadataEditor:
         self.world_instanceId = tk.Entry(form_frame, width=40)
         self.world_instanceId.grid(row=4, column=1, padx=5, pady=2)
         
-        # Players field (multiline)
         tk.Label(form_frame, text="Players (one per line as: displayName, id):").grid(row=5, column=0, sticky="w", padx=5)
         self.players_text = scrolledtext.ScrolledText(form_frame, width=40, height=8)
         self.players_text.grid(row=5, column=1, padx=5, pady=2)
@@ -100,7 +97,7 @@ class PNGMetadataEditor:
         file_path = filedialog.askopenfilename(title="Select PNG file", filetypes=[("PNG files", "*.png")])
         if not file_path:
             return
-        
+
         try:
             with Image.open(file_path) as img:
                 metadata_json = img.info.get("Description")
@@ -112,16 +109,43 @@ class PNGMetadataEditor:
             messagebox.showerror("Error", f"Error loading PNG: {e}")
             return
 
-        # Store original file timestamps and creation time
+        # Always get atime and mtime for later use
         try:
             stat = os.stat(file_path)
             self.original_timestamps = (stat.st_atime, stat.st_mtime)
-            self.original_creation_time = stat.st_ctime  # On Windows, this is the creation time.
-            creation_str = datetime.datetime.fromtimestamp(self.original_creation_time).strftime("%Y-%m-%d %H:%M:%S")
-            self.creation_date_var.set(creation_str)
         except Exception as e:
             messagebox.showwarning("Warning", f"Could not load file timestamps: {e}")
-        
+            self.original_timestamps = None
+
+        # Determine creation time from filename if possible
+        creation_ts = None
+        filename = os.path.basename(file_path)
+        match = re.search(r"(\d{4}-\d{2}-\d{2})_(\d{2}-\d{2}-\d{2}(?:\.\d+)?)", filename)
+        if match:
+            date_part = match.group(1)
+            time_part = match.group(2).replace('-', ':')
+            try:
+                dt = datetime.datetime.strptime(f"{date_part} {time_part}", "%Y-%m-%d %H:%M:%S.%f")
+            except ValueError:
+                try:
+                    dt = datetime.datetime.strptime(f"{date_part} {time_part}", "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    dt = None
+            if dt:
+                creation_ts = dt.timestamp()
+
+        # Fallback to Windows creation time if filename parse failed
+        if creation_ts is None:
+            try:
+                creation_ts = stat.st_ctime
+            except Exception:
+                creation_ts = None
+
+        self.original_creation_time = creation_ts
+        if creation_ts:
+            creation_str = datetime.datetime.fromtimestamp(creation_ts).strftime("%Y-%m-%d %H:%M:%S")
+            self.creation_date_var.set(creation_str)
+
         # Populate fields from metadata JSON
         if "author" in metadata:
             self.author_displayName.delete(0, tk.END)
@@ -188,8 +212,6 @@ class PNGMetadataEditor:
         if not self.embed_png_path:
             messagebox.showerror("Error", "No PNG file selected for embedding. Please click 'Select PNG for Embedding' first.")
             return
-        
-        # Gather metadata from form fields
         author = {
             "displayName": self.author_displayName.get().strip(),
             "id": self.author_id.get().strip()
@@ -209,7 +231,6 @@ class PNGMetadataEditor:
                         "displayName": parts[0].strip(),
                         "id": parts[1].strip()
                     })
-        
         metadata_dict = {
             "application": "VRCX",
             "version": 1,
@@ -218,27 +239,19 @@ class PNGMetadataEditor:
             "players": players
         }
         metadata_json = json.dumps(metadata_dict, indent=2, ensure_ascii=False)
-        
-        # Open the selected PNG and embed the metadata
         try:
             image = Image.open(self.embed_png_path)
         except Exception as e:
             messagebox.showerror("Error", f"Error opening PNG file: {e}")
             return
-        
         pnginfo = PngImagePlugin.PngInfo()
         pnginfo.add_text("Description", metadata_json)
-        
-        # Automatically save the new file in the same directory with '_Modified' appended to its base name.
         base, ext = os.path.splitext(self.embed_png_path)
         save_path = base + "_Modified" + ext
-        
         try:
             image.save(save_path, pnginfo=pnginfo)
-            # Update the new file's access and modification times
             if self.original_timestamps:
                 os.utime(save_path, self.original_timestamps)
-            # Attempt to update the creation time on Windows if pywin32 is available
             if set_file_creation_time and self.original_creation_time:
                 set_file_creation_time(save_path, self.original_creation_time)
             messagebox.showinfo("Success", f"PNG saved with embedded metadata:\n{save_path}")
