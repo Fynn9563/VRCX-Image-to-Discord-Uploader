@@ -10,6 +10,7 @@ from tkinter import (
 from database_manager import DatabaseManager
 from uploader import ImageUploader
 from config_loader import load_config
+from metadata_editor import PNGMetadataEditor
 
 class AppState:
     """
@@ -140,7 +141,7 @@ class ApplicationGUI:
         add_webhook_button.grid(row=0, column=2, padx=5, pady=5)
 
         media_channel_tickbox = Checkbutton(
-            self.root, text="Discord Media Channel", variable=self.app_state.media_channel_var,
+            self.root, text="Discord Forum Channel", variable=self.app_state.media_channel_var,
             font=self.app_state.font_style
         )
         media_channel_tickbox.pack(side="top", padx=5, pady=5)
@@ -159,6 +160,14 @@ class ApplicationGUI:
             self.root, text="Upload Images", command=self.process_images, font=self.app_state.font_style
         )
         self.app_state.upload_button.pack(side="top", padx=5, pady=5)
+
+        self.edit_metadata_button = Button(
+            self.root,
+            text="Edit Metadata",
+            font=self.app_state.font_style,
+            command=lambda: PNGMetadataEditor(Toplevel(self.root))
+        )
+        self.edit_metadata_button.pack(side="top", padx=5, pady=5)
 
         self.app_state.upload_status_label = Label(
             self.root, text="", fg="blue", font=self.app_state.font_style
@@ -311,7 +320,7 @@ class ApplicationGUI:
                 continue
             try:
                 Image.open(file_path)
-            except (IOError, UnidentifiedImageError):
+            except Exception:
                 messagebox.showerror("Error", f"Invalid image file: {file_path}")
                 continue
             self.app_state.image_queue.append(file_path)
